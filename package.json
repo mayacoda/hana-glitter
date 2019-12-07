@@ -2,12 +2,13 @@
   "name": "hana-glitter",
   "version": "1.0.0",
   "description": "Applies triangular glitter to mask as a background to the image",
-  "main": "hana.js",
+  "main": "dist/hana.js",
   "scripts": {
     "compile": "tsc",
     "compile:watch": "tsc --watch",
-    "start": "concurrently \"npm run compile:watch\" \"canvas-sketch canvas-sketch.js --open\""
+    "start": "concurrently \"npm run compile:watch\" \"canvas-sketch dist/canvas-sketch.js --open\""
   },
+  "repository": "https://github.com/mayacoda/hana-glitter",
   "keywords": [
     "generative art",
     "canvas-sketch",

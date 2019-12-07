@@ -110,11 +110,11 @@ export const initCanvas = async ({canvas, gl, width, height, image, mask}) => {
     canvas.width = width;
 
     if (!image) {
-        image = await load(`assets/hana.png`);
+        image = await load(`../assets/hana.png`);
     }
 
     if (!mask) {
-        mask = await load(`assets/hana_mask.png`);
+        mask = await load(`../assets/hana_mask.png`);
     }
 
     const points = createGrid(count, width / height);
