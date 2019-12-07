@@ -1,0 +1,35 @@
+{
+  "name": "hana-glitter",
+  "version": "1.0.0",
+  "description": "Applies triangular glitter to mask as a background to the image",
+  "main": "hana.js",
+  "scripts": {
+    "compile": "tsc",
+    "compile:watch": "tsc --watch",
+    "start": "concurrently \"npm run compile:watch\" \"canvas-sketch canvas-sketch.js --open\""
+  },
+  "keywords": [
+    "generative art",
+    "canvas-sketch",
+    "webgl",
+    "graphics",
+    "illustration"
+  ],
+  "author": {
+    "name": "Maya Nedeljkovich",
+    "email": "maya.nedeljko@gmail.com",
+    "url": "maya-ndljk.art"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^12.12.14",
+    "canvas-sketch": "^0.7.1",
+    "canvas-sketch-util": "^1.10.0",
+    "load-asset": "^1.2.0",
+    "nice-color-palettes": "^3.0.0",
+    "regl": "^1.3.13"
+  },
+  "devDependencies": {
+    "concurrently": "^5.0.0"
+  }
+}
