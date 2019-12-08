@@ -4,6 +4,7 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "sourceMap": true,
+        "declaration": true,
         "lib": [
             "es2015",
             "dom"

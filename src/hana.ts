@@ -28,7 +28,7 @@ const frag = glsl(`
     void main() {
         vec4 color;
 
-        float brightness = smoothstep(0.6, 1.0, sin((time + 10.0) * vRandomNoise) + 1.0);
+        float brightness = smoothstep(-1.0, 1.0, sin((time + 10.0) * vRandomNoise * 10.0) + 1.0);
         color = mix(backgroundColor, vColor, brightness);
 
         gl_FragColor = color;
@@ -102,7 +102,7 @@ const textureVert = glsl(`
 `);
 
 export const initCanvas = async ({canvas, gl, width, height, image, mask}) => {
-    const count = 40;
+    const count = 60;
     const background = hexToRGB(PALETTE[1]);
     gl = canvas.getContext('webgl');
 

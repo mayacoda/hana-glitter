@@ -47,7 +47,7 @@ var PALETTE = color_utils_1.sortByBrightness(triangle_utils_1.getRandomPalette()
 PALETTE.forEach(function (color) {
     console.log("%c " + color, "background: " + color);
 });
-var frag = glsl("\n\n    precision mediump float;\n\n    varying vec4 vColor;\n    varying float vRandomNoise;\n\n    uniform vec4 backgroundColor;\n    uniform float time;\n\n    void main() {\n        vec4 color;\n\n        float brightness = smoothstep(0.6, 1.0, sin((time + 10.0) * vRandomNoise) + 1.0);\n        color = mix(backgroundColor, vColor, brightness);\n\n        gl_FragColor = color;\n    }\n");
+var frag = glsl("\n\n    precision mediump float;\n\n    varying vec4 vColor;\n    varying float vRandomNoise;\n\n    uniform vec4 backgroundColor;\n    uniform float time;\n\n    void main() {\n        vec4 color;\n\n        float brightness = smoothstep(-1.0, 1.0, sin((time + 10.0) * vRandomNoise * 10.0) + 1.0);\n        color = mix(backgroundColor, vColor, brightness);\n\n        gl_FragColor = color;\n    }\n");
 var vert = glsl("\n    precision mediump float;\n\n    attribute vec2 position;\n    attribute vec4 color;\n    attribute vec3 normal;\n    attribute vec2 center;\n\n    uniform float width, height;\n\n    varying vec4 vColor;\n    varying float vRandomNoise;\n\n    float random (vec2 st) {\n        return fract(sin(dot(st.xy, vec2(12.9898, 78.233)))*43758.5453123);\n    }\n\n    void main() {\n        float aspect = width / height;\n        vec2 worldPosition = 2.0 * vec2((position.x - 0.5), (position.y - 0.5));\n        vec2 worldCenter = vec2(2.0 * (center.x - 0.5), 2.0 * (center.x - 0.5));\n\n        vColor = color;\n        vRandomNoise = random(center);\n\n        gl_Position = vec4(worldPosition.xy, 0, 1);\n    }\n");
 var maskFrag = glsl("\n    precision mediump float;\n    uniform sampler2D texture;\n    uniform sampler2D allowedTexture;\n    uniform vec4 backgroundColor;\n    varying vec2 uv;\n\n    vec4 red = vec4(1.0, 0.0, 0.0, 1.0);\n    vec4 green = vec4(0.0, 1.0, 0.0, 1.0);\n    vec4 blue = vec4(0.0, 0.0, 1.0, 1.0);\n\n    void main() {\n        vec4 color = texture2D(texture, uv);\n        vec4 allowedColor = texture2D(allowedTexture, uv);\n        if (color.r > 0.5 && allowedColor.a < .8) {\n            discard;\n        }\n\n        gl_FragColor = mix(gl_FragColor, allowedColor, allowedColor.a);\n    }\n");
 var textureVert = glsl("\n    precision mediump float;\n    attribute vec2 position;\n    varying vec2 uv;\n    \n    void main() {\n        uv = position;\n        vec2 pos = (1.0 - 2.0 * position);\n        gl_Position = vec4(-pos.x, pos.y, 0, 1);\n    }\n");
@@ -58,7 +58,7 @@ exports.initCanvas = function (_a) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    count = 40;
+                    count = 60;
                     background = color_utils_1.hexToRGB(PALETTE[1]);
                     gl = canvas.getContext('webgl');
                     canvas.height = height;
