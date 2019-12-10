@@ -39,7 +39,7 @@ const frag = glsl(`
 const vert = glsl(`
     precision mediump float;
 
-    #pragma glslify: snoise2 = require(glsl-noise/simplex/2d)
+    #pragma glslify: snoise = require(./simplex2d)
 
     attribute vec2 position;
     attribute vec4 color;
@@ -52,7 +52,7 @@ const vert = glsl(`
     varying float vRandomNoise;
     
     float random (vec2 st) {
-        return (snoise2(st) + 1.0) / 2.0;
+        return (snoise(st) + 1.0) / 2.0;
     }
 
     void main() {
@@ -90,7 +90,7 @@ const maskFrag = glsl(`
     }
 `);
 
-
+// language=GLSL
 const textureVert = glsl(`
     precision mediump float;
     attribute vec2 position;

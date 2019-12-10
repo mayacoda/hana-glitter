@@ -24,7 +24,6 @@
   "license": "ISC",
   "dependencies": {
     "canvas-sketch-util": "^1.10.0",
-    "glsl-noise": "^0.0.0",
     "glslify": "^7.0.0",
     "load-asset": "^1.2.0",
     "nice-color-palettes": "^3.0.0",
