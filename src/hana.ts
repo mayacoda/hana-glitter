@@ -39,6 +39,8 @@ const frag = glsl(`
 const vert = glsl(`
     precision mediump float;
 
+    #pragma glslify: snoise2 = require(glsl-noise/simplex/2d)
+
     attribute vec2 position;
     attribute vec4 color;
     attribute vec3 normal;
@@ -48,9 +50,9 @@ const vert = glsl(`
 
     varying vec4 vColor;
     varying float vRandomNoise;
-
+    
     float random (vec2 st) {
-        return fract(sin(dot(st.xy, vec2(12.9898, 78.233)))*43758.5453123);
+        return (snoise2(st) + 1.0) / 2.0;
     }
 
     void main() {
