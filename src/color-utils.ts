@@ -1,6 +1,6 @@
 import {distance} from "./triangle-utils";
 
-export function hexToRGB(hex: string): number[] {
+export function hexToRGB(hex: string): [number, number, number, number] {
     if (hex.charAt(0) === '#') {
         hex = hex.substr(1);
     }

@@ -1,3 +1,4 @@
+export declare function initColors(): string[];
 export declare const initCanvas: ({canvas, gl, width, height, image, mask}: {
     canvas: any;
     gl: any;

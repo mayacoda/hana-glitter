@@ -1,6 +1,7 @@
 import {Triangle} from "./interfaces";
 import {createGrid, createTriangles, getRandomPalette,} from './triangle-utils';
 import {hexToRGB, sortByBrightness} from "./color-utils";
+import * as REGL from "regl";
 
 const load = require('load-asset');
 const random = require('canvas-sketch-util/random');
@@ -8,11 +9,16 @@ const glsl = require('glslify');
 const createRegl = require('regl');
 
 random.setSeed(random.getRandomSeed());
+let PALETTE;
+let BACKGROUND;
+let POINTS = [];
+let COLORS = [];
+let TRIANGLES = [];
+let regl: REGL.Regl;
 
-let PALETTE = sortByBrightness(getRandomPalette());
-PALETTE.forEach(color => {
-    console.log(`%c ${color}`, `background: ${color}`);
-});
+let POSITION_BUFFER: REGL.Buffer;
+let COLOR_BUFFER: REGL.Buffer;
+let CENTER_BUFFER: REGL.Buffer;
 
 // language=GLSL
 const frag = glsl(`
@@ -63,12 +69,12 @@ const vert = glsl(`
 
     float snoise(vec2 v)
     {
-        const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
-        0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
-        -0.577350269189626,  // -1.0 + 2.0 * C.x
-        0.024390243902439); // 1.0 / 41.0
+        const vec4 C = vec4(0.211324865405187, // (3.0-sqrt(3.0))/6.0
+        0.366025403784439, // 0.5*(sqrt(3.0)-1.0)
+        -0.577350269189626, // -1.0 + 2.0 * C.x
+        0.024390243902439);// 1.0 / 41.0
         // First corner
-        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 i  = floor(v + dot(v, C.yy));
         vec2 x0 = v -   i + dot(i, C.xx);
 
         // Other corners
@@ -83,13 +89,13 @@ const vert = glsl(`
         x12.xy -= i1;
 
         // Permutations
-        i = mod289(i); // Avoid truncation effects in permutation
-        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-        + i.x + vec3(0.0, i1.x, 1.0 ));
+        i = mod289(i);// Avoid truncation effects in permutation
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
+        + i.x + vec3(0.0, i1.x, 1.0));
 
-        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-        m = m*m ;
-        m = m*m ;
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+        m = m*m;
+        m = m*m;
 
         // Gradients: 41 points uniformly over a line, mapped onto a diamond.
         // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
@@ -101,7 +107,7 @@ const vert = glsl(`
 
         // Normalise gradients implicitly by scaling m
         // Approximation of: m *= inversesqrt( a0*a0 + h*h );
-        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+        m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
 
         // Compute final noise value at P
         vec3 g;
@@ -119,7 +125,7 @@ const vert = glsl(`
 
     varying vec4 vColor;
     varying float vRandomNoise;
-    
+
     float random (vec2 st) {
         return (snoise(st) + 1.0) / 2.0;
     }
@@ -164,7 +170,7 @@ const textureVert = glsl(`
     precision mediump float;
     attribute vec2 position;
     varying vec2 uv;
-    
+
     void main() {
         uv = position;
         vec2 pos = (1.0 - 2.0 * position);
@@ -172,9 +178,36 @@ const textureVert = glsl(`
     }
 `);
 
+
+function initPalette() {
+    const hexPalette = sortByBrightness(getRandomPalette());
+
+    PALETTE = hexPalette.map(c => hexToRGB(c));
+    BACKGROUND = PALETTE.shift();
+
+    return hexPalette;
+}
+
+export function initColors() {
+    const hexPalette = initPalette();
+
+    COLORS = TRIANGLES.map(_ => {
+        const index = random.rangeFloor(0, PALETTE.length - 1);
+        let color = PALETTE[index];
+        return [color, color, color];
+    });
+
+    COLOR_BUFFER({
+        data: COLORS
+    });
+
+    return hexPalette;
+}
+
 export const initCanvas = async ({canvas, gl, width, height, image, mask}) => {
     const count = 60;
-    const background = hexToRGB(PALETTE[1]);
+    initPalette();
+
     gl = canvas.getContext('webgl');
 
     canvas.height = height;
@@ -188,77 +221,76 @@ export const initCanvas = async ({canvas, gl, width, height, image, mask}) => {
         mask = await load(`../assets/hana_mask.png`);
     }
 
-    const points = createGrid(count, width / height);
-    const triangles = createTriangles(points).filter((triangle: Triangle) => {
+    POINTS = createGrid(count, width / height);
+
+    TRIANGLES = createTriangles(POINTS).filter((triangle: Triangle) => {
         const localRandom = random;
         let amplitude = localRandom.value();
         return localRandom.noise2D(triangle[0][0], triangle[0][1], 20, amplitude) > 0.1
     });
 
-    const colors = triangles.map(_ => {
-        let color = hexToRGB(random.pick(PALETTE));
+    COLORS = TRIANGLES.map(_ => {
+        let color = random.pick(PALETTE);
         return [color, color, color];
     });
 
-    const centers = triangles.map(([[x, y], [x2, y2], [x3, y3]]) => {
+    const centers = TRIANGLES.map(([[x, y], [x2, y2], [x3, y3]]) => {
         const center = [(x + x2 + x3) / 3, (y + y2 + y3) / 3];
         return [center, center, center];
     });
 
-    const regl = createRegl({gl});
+    regl = createRegl({gl});
 
     const maskTexture = regl.texture(mask);
     const hanaTexture = regl.texture(image);
 
-    const positionBuffer = regl.buffer(triangles);
-    const colorBuffer = regl.buffer(colors);
-    const centerBuffer = regl.buffer(centers);
+    POSITION_BUFFER = regl.buffer(TRIANGLES);
+    COLOR_BUFFER = regl.buffer(COLORS);
+    CENTER_BUFFER = regl.buffer(centers);
+
+    type TriangleProps = { time: number };
+    const drawTriangles = regl({
+        frag,
+        vert,
+        attributes: {
+            position: POSITION_BUFFER,
+            color: COLOR_BUFFER,
+            center: CENTER_BUFFER
+        },
+        uniforms: {
+            backgroundColor: BACKGROUND,
+            time: regl.prop<TriangleProps, 'time'>('time'),
+            width,
+            height
+        },
+        count: TRIANGLES.length * 3,
+    });
+
+    const drawMask = regl({
+        vert: textureVert,
+        frag: maskFrag,
+        uniforms: {
+            texture: maskTexture,
+            allowedTexture: hanaTexture,
+            backgroundColor: BACKGROUND,
+        },
+        attributes: {
+            position: [
+                -2, 0,
+                0, -2,
+                2, 2]
+        },
+        count: 3
+    });
 
     regl.frame(({time}) => {
 
         regl.clear({
-            color: background,
+            color: BACKGROUND,
             depth: 1
         });
 
-        const drawTriangles = regl({
-            frag,
-            vert,
-            attributes: {
-                position: positionBuffer,
-                color: colorBuffer,
-                center: centerBuffer
-            },
-            uniforms: {
-                backgroundColor: background,
-                time,
-                width,
-                height
-            },
-            count: triangles.length * 3,
-        });
-
-        const drawMask = regl({
-            vert: textureVert,
-            frag: maskFrag,
-            uniforms: {
-                texture: maskTexture,
-                allowedTexture: hanaTexture,
-                backgroundColor: background,
-            },
-            attributes: {
-                position: [
-                    -2, 0,
-                    0, -2,
-                    2, 2]
-            },
-            count: 3
-        });
-
         drawMask();
-
-        drawTriangles();
-
-        gl.flush();
-    })
+        drawTriangles({time});
+    });
 };
